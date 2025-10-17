@@ -1,0 +1,18 @@
+# Requirements for VQE H2O Example
+# Install with: pip install -r vqe_requirements.txt
+
+# Core CUDA Quantum
+cuda-quantum
+
+# Chemistry and quantum chemistry packages
+openfermion>=1.5.1
+openfermionpyscf>=0.5
+
+# Scientific computing
+numpy>=1.21.0
+scipy>=1.7.0
+
+# Optional: For better visualization and analysis
+matplotlib>=3.3.0
+
+

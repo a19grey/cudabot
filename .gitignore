@@ -1,0 +1,38 @@
+cat > .gitignore << 'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# C/C++/CUDA build
+build/
+dist/
+*.o
+*.so
+*.a
+*.out
+.cmake/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# IDE/editors
+.vscode/
+.idea/
+
+# Logs & junk
+*.log
+.DS_Store
+
+# Data/model artifacts (keep out by default)
+data/
+checkpoints/
+artifacts/
+runs/
+
+# Node (if any)
+node_modules/
+EOF

@@ -1,0 +1,22 @@
+Content-Length: 11156
+Server: GitHub.com
+Content-Type: text/html; charset=utf-8
+X-Origin-Cache: HIT
+Last-Modified: Mon, 13 Oct 2025 15:46:33 GMT
+Access-Control-Allow-Origin: *
+Etag: W/"68ed1ed9-1076a"
+Expires: Thu, 16 Oct 2025 20:22:40 GMT
+Cache-Control: max-age=600
+Content-Encoding: gzip
+X-Proxy-Cache: MISS
+X-Github-Request-Id: 9425:DC09F:C392:DBC2:68F151B8
+Accept-Ranges: bytes
+Age: 0
+Date: Thu, 16 Oct 2025 20:12:40 GMT
+Via: 1.1 varnish
+X-Served-By: cache-bma-essb1270034-BMA
+X-Cache: MISS
+X-Cache-Hits: 0
+X-Timer: S1760645560.223404,VS0,VE119
+Vary: Accept-Encoding
+X-Fastly-Request-Id: a097e9d4c863dd890bf52e69e1db123bc8f47d5e

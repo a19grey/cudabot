@@ -1,0 +1,28 @@
+platform:
+  name: "AI Documentation Assistant"
+  version: "1.0.0"
+
+embedding:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  chunk_size: 5000           # Large chunks for more context
+  chunk_overlap: 500         # Larger overlap for continuity
+  similarity_threshold: 0.6
+  max_results: 10            # Allow more chunks (up to 30K tokens total)
+
+storage:
+  vector_db: "chromadb"
+  data_dir: "./data"
+  embeddings_dir: "./data/embeddings"
+  raw_dir: "./data/raw"
+  processed_dir: "./data/processed"
+
+llm:
+  provider: "openai"
+  model: "gpt-4"
+  temperature: 0.1
+  max_tokens: 4000           # Increased for longer responses with more context
+
+crew:
+  max_execution_time: 300
+  memory: true
+  verbose: true

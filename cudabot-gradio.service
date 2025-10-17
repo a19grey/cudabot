@@ -1,0 +1,17 @@
+[Unit]
+Description=CudaBot Gradio UI Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/cudabot
+Environment="PATH=/root/cudabot/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/root/cudabot/venv/bin/python3 /root/cudabot/src/gradio_app.py --host 0.0.0.0 --port 7860
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

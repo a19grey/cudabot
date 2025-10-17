@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(python tests:*)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(apt:*)",
+      "Bash(apt install:*)",
+      "Bash(source:*)",
+      "Bash(./run.sh:*)",
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "Bash(timeout:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(awk:*)",
+      "Bash(./show_access_info.sh:*)",
+      "Read(//usr/bin/**)",
+      "Bash(sudo cp:*)",
+      "Bash(sudo systemctl daemon-reload:*)",
+      "Bash(sudo systemctl enable:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

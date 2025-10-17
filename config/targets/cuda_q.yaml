@@ -1,0 +1,97 @@
+target:
+  name: "CUDA-Q"
+  description: "NVIDIA CUDA-Q quantum computing platform"
+  domain: "quantum_computing"
+
+documentation:
+  # Multiple documentation sources with different crawl settings
+  sources:
+    - name: "main_docs"
+      base_url: "https://nvidia.github.io/cuda-quantum/latest/"
+      follow_links: true  # Recursively follow links
+      max_depth: 10
+      max_pages: 1000
+      crawl_patterns:
+        - "https://nvidia.github.io/cuda-quantum/latest/**/*.html"
+      exclude_patterns:
+        - "**/genindex.html"
+        - "**/search.html"
+        - "**/404.html"
+
+    - name: "github_releases"
+      base_url: "https://github.com/NVIDIA/cuda-quantum/releases"
+      follow_links: false  # Only crawl this single page
+      max_depth: 0  # No depth - just the starting URL
+      max_pages: 1
+      extract_content: true  # Extract release notes and version info
+
+  # Legacy fields for backward compatibility (uses first source)
+  base_url: "https://nvidia.github.io/cuda-quantum/latest/"
+  crawl_patterns:
+    - "https://nvidia.github.io/cuda-quantum/latest/**/*.html"
+  exclude_patterns:
+    - "**/genindex.html"
+    - "**/search.html"
+    - "**/404.html"
+
+agents:
+  researcher_agent:
+    role: "CUDA-Q Research Specialist"
+    goal: "Intelligently search and find the most relevant CUDA-Q documentation through strategic query reformulation"
+    backstory: |
+      Expert CUDA-Q researcher with deep knowledge of quantum computing and documentation structure.
+      Skilled at understanding complex queries, reformulating them for optimal search results,
+      and evaluating documentation relevance. Thinks strategically about search and iterates
+      to find the best possible information.
+
+  query_agent:
+    role: "CUDA-Q Documentation Specialist"
+    goal: "Find relevant CUDA-Q documentation and code examples"
+    backstory: "Expert in quantum computing documentation and CUDA-Q framework"
+
+  code_agent:
+    role: "CUDA-Q Code Generator"
+    goal: "Generate working CUDA-Q quantum computing code"
+    backstory: "Senior quantum software engineer specializing in CUDA-Q development"
+
+  validation_agent:
+    role: "CUDA-Q Code Validator"
+    goal: "Review and validate CUDA-Q code for best practices and correctness"
+    backstory: "CUDA-Q expert with deep knowledge of quantum computing patterns"
+
+  response_agent:
+    role: "CUDA-Q Documentation Assistant"
+    goal: "Create natural, conversational responses from technical research and code"
+    backstory: |
+      Friendly CUDA-Q documentation chatbot assistant. You excel at taking technical
+      research findings and code examples and presenting them in clear, conversational
+      language. You explain complex quantum computing concepts in accessible terms,
+      guide users through code examples step-by-step, and maintain a helpful,
+      encouraging tone. You focus on being genuinely helpful rather than just
+      dumping technical information.
+
+prompt_templates:
+  code_generation: |
+    Based on the following CUDA-Q documentation context:
+    {context}
+
+    Generate CUDA-Q code for: {query}
+
+    Requirements:
+    - Use proper CUDA-Q syntax and patterns
+    - Include necessary imports and headers
+    - Add brief comments explaining key concepts
+    - Follow quantum computing best practices
+
+  validation: |
+    Review this CUDA-Q code for correctness and best practices:
+    {code}
+
+    Context from documentation:
+    {context}
+
+    Provide feedback on:
+    - Syntax correctness
+    - Quantum computing patterns
+    - Performance considerations
+    - Best practice adherence
