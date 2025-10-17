@@ -18,6 +18,8 @@ dist/
 CMakeFiles/
 CMakeCache.txt
 compile_commands.json
+.scrapy
+.claude
 
 # IDE/editors
 .vscode/
