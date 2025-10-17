@@ -103,7 +103,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
         message: str,
         history: List[List[str]],
         target_name: str
-    ) -> Generator[List[List[str]], None, None]:
+    ) -> Generator[Tuple[List[List[str]], str], None, None]:
         """
         Process a chat message and yield response with streaming effect.
 
@@ -113,15 +113,15 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             target_name: Selected target
 
         Yields:
-            Updated history with streaming response
+            Tuple of (Updated history with streaming response, cleared textbox value)
         """
         if not target_name:
             history.append([message, "❌ Please select a target first."])
-            yield history
+            yield history, ""
             return
 
         if not message.strip():
-            yield history
+            yield history, ""
             return
 
         # Check if target is ready
@@ -129,16 +129,16 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
         if not setup_status['is_ready']:
             error_msg = f"❌ Target '{target_name}' is not set up properly. Please run setup first."
             history.append([message, error_msg])
-            yield history
+            yield history, ""
             return
 
         # Add user message and empty bot response
         history.append([message, ""])
-        yield history
+        yield history, ""
 
         # Initial processing message
         history[-1][1] = "🔍 Processing your query..."
-        yield history
+        yield history, ""
 
         try:
             # Get the output manager to find log file location
@@ -193,10 +193,10 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
                     if status is None:  # Completion signal
                         break
                     history[-1][1] = status
-                    yield history
+                    yield history, ""
                 except queue.Empty:
                     # No new status, just yield current state to keep UI responsive
-                    yield history
+                    yield history, ""
 
             # Wait for thread to complete
             thread.join()
@@ -238,7 +238,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             for token in tokens:
                 if token:  # Skip empty strings
                     history[-1][1] += token
-                    yield history
+                    yield history, ""
                     # Only add delay for actual words, not whitespace
                     if not token.isspace():
                         time.sleep(0.02)
@@ -256,7 +256,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             }
             self.debug_logs.append(debug_entry)
 
-            yield history
+            yield history, ""
 
     def clear_conversation(self) -> Tuple[List, str]:
         """Clear the conversation history."""
@@ -383,7 +383,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
 
                     # Info message
                     info_box = gr.Markdown(
-                        "Select a target and start chatting!",
+                        "",
                         visible=True
                     )
 
@@ -402,10 +402,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             msg.submit(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
-                outputs=[chatbot]
-            ).then(
-                fn=lambda: gr.update(value=""),
-                outputs=[msg]
+                outputs=[chatbot, msg]
             )
 
             # Clear conversation
@@ -434,10 +431,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
-                outputs=[chatbot]
-            ).then(
-                fn=lambda: gr.update(value=""),
-                outputs=[msg]
+                outputs=[chatbot, msg]
             )
 
             example_btn2.click(
@@ -446,10 +440,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
-                outputs=[chatbot]
-            ).then(
-                fn=lambda: gr.update(value=""),
-                outputs=[msg]
+                outputs=[chatbot, msg]
             )
 
             example_btn3.click(
@@ -458,10 +449,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
-                outputs=[chatbot]
-            ).then(
-                fn=lambda: gr.update(value=""),
-                outputs=[msg]
+                outputs=[chatbot, msg]
             )
 
             example_btn4.click(
@@ -470,10 +458,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
-                outputs=[chatbot]
-            ).then(
-                fn=lambda: gr.update(value=""),
-                outputs=[msg]
+                outputs=[chatbot, msg]
             )
 
             # Footer
@@ -482,7 +467,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
                 ---
 
                 **Built with CrewAI, ChromaDB, and Gradio** |
-                [Documentation](https://github.com/yourusername/cudabot) |
+                [Documentation](https://github.com/A19grey/cudabot) |
                 Powered by multi-agent AI
                 """
             )
