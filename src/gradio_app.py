@@ -242,16 +242,15 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
         )
 
         with gr.Blocks(
-            title="AI Documentation Assistant",
+            title="ChatterBot for CUDA-Q",
             theme=custom_theme
         ) as demo:
 
             gr.Markdown(
                 """
-                # 🤖 AI Documentation Assistant
+                # ChatterBot for CUDA-Q
 
-                Chat with your technical documentation using AI-powered agents.
-                Select a target documentation set and start asking questions!
+                Chat with your CUDA-Q documentation using AI-powered agents.
                 """
             )
 

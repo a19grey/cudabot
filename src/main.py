@@ -235,7 +235,7 @@ def info_command(args: argparse.Namespace) -> None:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="AI Documentation Assistant - Chat with your documentation using AI agents",
+        description="ChatterBot for CUDA-Q - Chat with your CUDA-Q documentation using AI agents",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
