@@ -11,6 +11,8 @@ from typing import List, Tuple, Optional, Generator, Dict, Any
 import time
 import json
 from datetime import datetime
+import threading
+import queue
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -134,33 +136,81 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
         history.append([message, ""])
         yield history
 
-        # Show processing indicator
-        processing_steps = [
-            "🔍 Processing your query...",
-            "🔬 Searching documentation...",
-            "🤖 Analyzing results...",
-        ]
-
-        for step in processing_steps:
-            history[-1][1] = step
-            yield history
-            time.sleep(0.3)
+        # Initial processing message
+        history[-1][1] = "🔍 Processing your query..."
+        yield history
 
         try:
             # Get the output manager to find log file location
             from utils.output_manager import get_output_manager
 
-            # Process query with the assistant (enable debug mode to capture logs)
-            result = run_documentation_assistant(
-                target_name,
-                message,
-                debug_mode=True
-            )
+            # Build conversation context from history
+            conversation_context = ""
+            if history:
+                for user_msg, bot_msg in history[:-1]:  # Exclude the current message we just added
+                    if user_msg and bot_msg:
+                        conversation_context += f"User: {user_msg}\nAssistant: {bot_msg}\n\n"
+
+            # Prepend context to current message if history exists
+            full_message = message
+            if conversation_context:
+                full_message = f"Previous conversation:\n{conversation_context}\nCurrent question: {message}"
+
+            # Create a queue for status updates
+            status_queue = queue.Queue()
+            result_container = {}
+
+            # Define callback to update status in real-time
+            def status_update_callback(status: str):
+                """Push status updates to the queue."""
+                status_queue.put(status)
+
+            # Run assistant in a separate thread
+            def run_assistant():
+                try:
+                    # Use debug_mode=False so logs are captured to file (for download)
+                    # Status updates will still be shown in the UI via the callback
+                    result = run_documentation_assistant(
+                        target_name,
+                        full_message,
+                        debug_mode=False,
+                        status_callback=status_update_callback
+                    )
+                    result_container['result'] = result
+                    status_queue.put(None)  # Signal completion
+                except Exception as e:
+                    result_container['error'] = e
+                    status_queue.put(None)  # Signal completion
+
+            # Start the assistant thread
+            thread = threading.Thread(target=run_assistant)
+            thread.start()
+
+            # Poll for status updates and yield them
+            while True:
+                try:
+                    status = status_queue.get(timeout=0.1)
+                    if status is None:  # Completion signal
+                        break
+                    history[-1][1] = status
+                    yield history
+                except queue.Empty:
+                    # No new status, just yield current state to keep UI responsive
+                    yield history
+
+            # Wait for thread to complete
+            thread.join()
+
+            # Check for errors
+            if 'error' in result_container:
+                raise result_container['error']
+
+            result = result_container['result']
 
             # Store the log file path from output manager
             output_mgr = get_output_manager()
-            if output_mgr and output_mgr.log_file:
-                self.latest_log_file = str(output_mgr.log_file.name)
+            if output_mgr and output_mgr.log_file_path:
+                self.latest_log_file = str(output_mgr.log_file_path)
 
             # Store debug log entry
             debug_entry = {
@@ -301,10 +351,16 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
                     # Example queries with clickable buttons
                     gr.Markdown("### 💡 Quick Start Questions")
 
-                    example_btn1 = gr.Button("Show me a 5 qubit state with Hadamard gate operators", size="sm")
-                    example_btn2 = gr.Button("What's the difference between CUDA-Q, DGQ quantum, and cuQuantum?", size="sm")
-                    example_btn3 = gr.Button("How to use VQE to solve H2O molecule energy?", size="sm")
-                    example_btn4 = gr.Button("Is quantum mechanics, like, even real?", size="sm")
+                    # Define example questions as variables to ensure button text matches query
+                    example_Q1 = "Show me a 5 qubit state with Hadamard gate operators"
+                    example_Q2 = "What's the difference between CUDA-Q, DGX Cloud, and cuQuantum?"
+                    example_Q3 = "How to use VQE to solve energy of the H2O molecule?"
+                    example_Q4 = "Is quantum mechanics, like, even real?"
+
+                    example_btn1 = gr.Button(example_Q1, size="sm")
+                    example_btn2 = gr.Button(example_Q2, size="sm")
+                    example_btn3 = gr.Button(example_Q3, size="sm")
+                    example_btn4 = gr.Button(example_Q4, size="sm")
 
                 with gr.Column(scale=2):
                     # Chat interface
@@ -348,7 +404,7 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
                 inputs=[msg, chatbot, target_dropdown],
                 outputs=[chatbot]
             ).then(
-                fn=lambda: "",
+                fn=lambda: gr.update(value=""),
                 outputs=[msg]
             )
 
@@ -373,50 +429,50 @@ You can now ask questions about {target_name}. I'll search the documentation, ge
 
             # Example button handlers - they set the message and trigger submission
             example_btn1.click(
-                fn=lambda: "Show me a 5 qubit state with Hadamard gate operators",
+                fn=lambda: example_Q1,
                 outputs=[msg]
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
                 outputs=[chatbot]
             ).then(
-                fn=lambda: "",
+                fn=lambda: gr.update(value=""),
                 outputs=[msg]
             )
 
             example_btn2.click(
-                fn=lambda: "What's the difference between CUDA-Q, DGQ quantum, and cuQuantum?",
+                fn=lambda: example_Q2,
                 outputs=[msg]
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
                 outputs=[chatbot]
             ).then(
-                fn=lambda: "",
+                fn=lambda: gr.update(value=""),
                 outputs=[msg]
             )
 
             example_btn3.click(
-                fn=lambda: "How to use VQE to solve H2O molecule energy?",
+                fn=lambda: example_Q3,
                 outputs=[msg]
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
                 outputs=[chatbot]
             ).then(
-                fn=lambda: "",
+                fn=lambda: gr.update(value=""),
                 outputs=[msg]
             )
 
             example_btn4.click(
-                fn=lambda: "Is quantum mechanics, like, even real?",
+                fn=lambda: example_Q4,
                 outputs=[msg]
             ).then(
                 fn=self.chat,
                 inputs=[msg, chatbot, target_dropdown],
                 outputs=[chatbot]
             ).then(
-                fn=lambda: "",
+                fn=lambda: gr.update(value=""),
                 outputs=[msg]
             )
 

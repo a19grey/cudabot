@@ -206,7 +206,7 @@ class DocumentationAssistantFlow(Flow):
             print(f"Warning: Could not save conversation history: {e}")
 
 
-def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool = False) -> Dict[str, Any]:
+def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool = False, status_callback=None) -> Dict[str, Any]:
     """
     Create a simple crew workflow without flows for basic queries.
 
@@ -214,6 +214,7 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
         target_name: Name of the target documentation set
         query: User's query
         debug_mode: If True, show verbose output. If False, capture to log file.
+        status_callback: Optional callback function(status: str) to report progress
 
     Returns:
         Result dictionary with documentation, code, and validation
@@ -221,6 +222,11 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
     from utils.output_manager import initialize_output_manager
     from preprocessing.hierarchical_processor import load_doc_map, load_lookup_data
     from tools.grep_search import GrepSearchTool
+
+    def report_status(status: str):
+        """Helper to report status through callback."""
+        if status_callback:
+            status_callback(status)
 
     # Initialize output manager with the correct debug mode
     output_mgr = initialize_output_manager(debug_mode=debug_mode)
@@ -230,11 +236,13 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
 
     # Initialize vector store
     debug_print("🔧 Initializing vector store...")
+    report_status("🔧 Initializing vector store...")
     chroma_client = initialize_chroma_client(data_paths['embeddings_dir'])
     collection = create_collection(chroma_client, f"{target_name}_docs")
 
     # Load hierarchical data and create GREP tool
     debug_print("🗺️  Loading hierarchical document structure...")
+    report_status("🗺️  Loading document index...")
     doc_map = load_doc_map(target_name, data_paths['processed_dir'])
     lookup_data = load_lookup_data(target_name, data_paths['processed_dir'])
 
@@ -243,11 +251,13 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
         try:
             grep_tool = GrepSearchTool(doc_map)
             debug_print("✅ GREP search tool initialized")
+            report_status("✅ Search tools ready")
         except Exception as e:
             debug_print(f"⚠️  GREP tool initialization failed: {e}")
 
     # Create agents (using researcher with GREP support)
     debug_print("🤖 Creating agents...")
+    report_status("🤖 Agents initialized")
     researcher_agent = create_researcher_agent(collection, config, grep_tool=grep_tool)
     code_agent = create_code_generation_agent(config)
     validation_agent = create_validation_agent(config)
@@ -258,6 +268,7 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
 
     # Execute intelligent research
     debug_print("\n🔬 Researcher agent searching for relevant documentation...")
+    report_status("🔬 Search Agent analyzing query...")
 
     with output_mgr.capture_output():
         research_crew = Crew(
@@ -270,6 +281,7 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
 
     documentation_context = str(research_result)
     debug_print(f"✅ Research completed: {len(documentation_context)} characters")
+    report_status(f"✅ Documentation retrieved")
 
     # Determine if code generation is needed
     needs_code = any(indicator in query.lower() for indicator in
@@ -286,6 +298,7 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
     if needs_code:
         # Generate code
         debug_print("\n💻 Generating code...")
+        report_status("💻 Code Agent generating examples...")
 
         with output_mgr.capture_output():
             code_task = create_code_generation_task(query, documentation_context, code_agent, config)
@@ -300,9 +313,11 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
         generated_code = str(code_result)
         result['generated_code'] = generated_code
         debug_print(f"✅ Code generated: {len(generated_code)} characters")
+        report_status(f"✅ Code generated")
 
         # Validate code
         debug_print("\n✔️  Validating code...")
+        report_status("✔️  Validation Agent reviewing code...")
 
         with output_mgr.capture_output():
             validation_task = create_validation_task(generated_code, documentation_context, query, validation_agent, config)
@@ -316,9 +331,11 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
 
         result['validation_result'] = str(validation_result)
         debug_print(f"✅ Validation completed: {len(str(validation_result))} characters")
+        report_status("✅ Code validated")
 
     # Generate conversational response
     debug_print("\n💬 Creating conversational response...")
+    report_status("💬 Response Agent crafting final answer...")
 
     with output_mgr.capture_output():
         response_task = create_response_task(
@@ -339,6 +356,7 @@ def create_simple_crew_workflow(target_name: str, query: str, debug_mode: bool =
 
     result['conversational_response'] = str(conversational_response)
     debug_print(f"✅ Conversational response generated: {len(str(conversational_response))} characters")
+    report_status("✅ Response ready!")
 
     return result
 
@@ -359,7 +377,7 @@ async def run_documentation_assistant_async(target_name: str, query: str) -> Dic
         return create_simple_crew_workflow(target_name, query)
 
 
-def run_documentation_assistant(target_name: str, query: str, use_flow: bool = False, debug_mode: bool = False) -> Dict[str, Any]:
+def run_documentation_assistant(target_name: str, query: str, use_flow: bool = False, debug_mode: bool = False, status_callback=None) -> Dict[str, Any]:
     """Run the documentation assistant synchronously.
 
     Args:
@@ -367,6 +385,10 @@ def run_documentation_assistant(target_name: str, query: str, use_flow: bool = F
         query: User's query
         use_flow: If True, use CrewAI flows (experimental). If False, use simple crew workflow.
         debug_mode: If True, show verbose output. If False, capture to log file.
+        status_callback: Optional callback function(status: str) to report progress
+
+    Returns:
+        Result dictionary with documentation, code, and validation
     """
     try:
         if use_flow:
@@ -382,13 +404,13 @@ def run_documentation_assistant(target_name: str, query: str, use_flow: bool = F
                 result['target'] = target_name
             return result
         else:
-            # Use simple crew workflow with debug mode
-            return create_simple_crew_workflow(target_name, query, debug_mode=debug_mode)
+            # Use simple crew workflow with debug mode and status callback
+            return create_simple_crew_workflow(target_name, query, debug_mode=debug_mode, status_callback=status_callback)
 
     except Exception as e:
         print(f"Error running flow: {e}")
         # Fallback to simple crew workflow
-        return create_simple_crew_workflow(target_name, query, debug_mode=debug_mode)
+        return create_simple_crew_workflow(target_name, query, debug_mode=debug_mode, status_callback=status_callback)
 
 
 def get_conversation_history(target_name: str) -> List[Dict[str, Any]]:

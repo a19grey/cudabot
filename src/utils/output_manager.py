@@ -33,6 +33,7 @@ class OutputManager:
         self.debug_mode = debug_mode
         self.log_dir = log_dir or Path("logs")
         self.log_file: Optional[TextIO] = None
+        self.log_file_path: Optional[Path] = None  # Store the path for later access
         self.captured_output: list = []
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
@@ -44,6 +45,7 @@ class OutputManager:
             # Create log file with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             log_path = self.log_dir / f"cudabot_{timestamp}.log"
+            self.log_file_path = log_path  # Save the path
             self.log_file = open(log_path, 'w', encoding='utf-8')
 
             # Write header to log file
